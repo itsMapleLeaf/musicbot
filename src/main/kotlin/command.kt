@@ -1,11 +1,11 @@
-import discord4j.core.event.domain.message.MessageCreateEvent
+//import discord4j.core.event.domain.message.MessageCreateEvent
 
 private val spacesRegex = Regex("\\s+")
 
-data class CommandContext(val event: MessageCreateEvent, val args: List<String>) {
-    fun reply(message: String) {
-        event.message.channel.block()?.createMessage(message)?.block()
-    }
+interface CommandContext {
+    val args: List<String>
+    fun reply(message: String)
+    fun joinVoiceChannel(): Boolean
 }
 
 data class Command(
