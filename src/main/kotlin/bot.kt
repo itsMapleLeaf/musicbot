@@ -67,6 +67,9 @@ private val eventListener = EventListener { event ->
 }
 
 fun runDiscordBot() {
-    val client = JDABuilder(botToken).addEventListeners(eventListener).build()
-    client.awaitReady()
+    JDABuilder
+        .createDefault(botToken)
+        .addEventListeners(eventListener)
+        .build()
+        .awaitReady()
 }
