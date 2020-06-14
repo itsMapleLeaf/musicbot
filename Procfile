@@ -1,1 +1,1 @@
-worker: java -jar build/libs/discord-maybe-music-bot.jar
+worker: ./gradlew run
