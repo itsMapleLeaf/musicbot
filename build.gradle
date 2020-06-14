@@ -3,11 +3,11 @@ plugins {
     id 'org.jetbrains.kotlin.jvm' version '1.3.72'
 }
 
-group 'net.kingdaro.discordmusicbot'
+apply plugin: 'java'
+apply plugin: 'kotlin'
+apply plugin: 'application'
 
-application {
-    mainClass = 'MainKt'
-}
+group 'net.kingdaro.discordmusicbot'
 
 repositories {
     mavenCentral()
@@ -21,9 +21,25 @@ dependencies {
     implementation 'com.sedmelluq:lavaplayer:1.3.49'
 }
 
+mainClassName = "MainKt"
+
+jar {
+    manifest {
+        attributes "Main-Class": "$mainClassName"
+    }
+
+    from {
+        configurations.runtimeClasspath.collect {
+            it.isDirectory() || it.toString().endsWith("pom") ? it : zipTree(it)
+        }
+    }
+}
+
 compileKotlin {
     kotlinOptions.jvmTarget = "1.8"
 }
 compileTestKotlin {
     kotlinOptions.jvmTarget = "1.8"
 }
+
+task stage(dependsOn: ['jar'])
