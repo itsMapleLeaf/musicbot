@@ -3,7 +3,6 @@ plugins {
 }
 
 group 'net.kingdaro.discordmusicbot'
-version '1.0-SNAPSHOT'
 
 repositories {
     mavenCentral()
