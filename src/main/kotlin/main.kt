@@ -13,7 +13,8 @@ val player = AudioPlayerWrapper()
 
 val commands = listOf(
     Command("play") {
-        val input = args.firstOrNull() ?: return@Command reply("missing youtube link")
+        val input = args.firstOrNull()
+            ?: return@Command reply("missing youtube link")
 
         val channel = event.member.get().voiceState.block()?.channel?.block()
             ?: return@Command reply("must be in a voice channel")
