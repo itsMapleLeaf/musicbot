@@ -1,4 +1,5 @@
 interface CommandContext {
+    val bot: Bot
     val args: List<String>
     fun reply(message: String)
     fun joinVoiceChannel(): Boolean

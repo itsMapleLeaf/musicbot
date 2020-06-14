@@ -1,3 +1,3 @@
 fun main() {
-    runDiscordBot()
+    Bot(botCommands).run()
 }
