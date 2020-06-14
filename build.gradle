@@ -30,6 +30,7 @@ jar {
 
     from {
         configurations.runtimeClasspath.collect {
+            // what even is this
             it.isDirectory() || it.toString().endsWith("pom") ? it : zipTree(it)
         }
     }
