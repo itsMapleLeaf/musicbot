@@ -28,3 +28,10 @@ jar {
         attributes 'Main-Class': 'MainKt'
     }
 }
+
+task copyToLib(type: Copy) {
+    into "$buildDir/libs"
+    from(configurations.compile)
+}
+
+build.dependsOn copyToLib
