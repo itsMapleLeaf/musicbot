@@ -1,5 +1,12 @@
+import com.github.kittinunf.fuel.Fuel
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayer
+import com.sedmelluq.discord.lavaplayer.player.AudioPlayerManager
+import com.sedmelluq.discord.lavaplayer.player.DefaultAudioPlayerManager
+import com.sedmelluq.discord.lavaplayer.source.AudioSourceManagers
+import com.sedmelluq.discord.lavaplayer.track.playback.AudioFrameBufferFactory
 import com.sedmelluq.discord.lavaplayer.track.playback.MutableAudioFrame
+import com.sedmelluq.discord.lavaplayer.track.playback.NonAllocatingAudioFrameBuffer
+import kotlinx.coroutines.*
 import net.dv8tion.jda.api.JDABuilder
 import net.dv8tion.jda.api.audio.AudioSendHandler
 import net.dv8tion.jda.api.entities.Activity
@@ -9,16 +16,16 @@ import net.dv8tion.jda.api.hooks.EventListener
 import java.nio.Buffer
 import java.nio.ByteBuffer
 
-private val token = System.getenv("BOT_TOKEN") ?: error("BOT_TOKEN env variable not found")
+private fun safeGetEnv(name: String) =
+    System.getenv(name) ?: error("env variable not found: $name")
+
+private val token = safeGetEnv("BOT_TOKEN")
+private val youtubeApiKey = safeGetEnv("YOUTUBE_API_KEY")
 private const val commandPrefix = "-"
 
-private val Command.prefixText get() = "$commandPrefix$name"
-
-class Bot(
-    private val commands: List<Command>,
-    controller: PlayerController
-) {
-    private val audioPlayer = controller.createAudioPlayer()
+class Bot {
+    private val lavaPlayerManager = createLavaPlayerManager()
+    private val audioPlayer = lavaPlayerManager.createPlayer()
     private val jdaSendingHandler = AudioPlayerSendHandler(audioPlayer)
 
     private fun handleReady(event: ReadyEvent) {
@@ -28,54 +35,56 @@ class Bot(
 
     private fun handleMessageReceived(event: MessageReceivedEvent) {
         val content = event.message.contentStripped
-        val command = commands.find { content.startsWith(it.prefixText) }
 
-        if (command != null) {
-            val args = content
-                .drop(command.prefixText.length)
-                .split(" ")
-                .filterNot { it.isBlank() }
-                .map { it.trim() }
+        fun reply(message: String) {
+            event.message.channel.sendMessage(message)
+        }
 
-            val bot = this
+        if (content.startsWith(commandPrefix)) {
+            val contentWithoutPrefix = content.drop(commandPrefix.length)
+            val words = contentWithoutPrefix.split(Regex("\\s+"))
+            val command = words[0]
+            val args = words.drop(1)
 
-            val context = object : CommandContext {
-                override val bot = bot
-                override val args = args
+            when (command) {
+                "radio" -> {
+                    val source = args.firstOrNull()
+                        ?: return reply("please provide a link or search query! e.g. \"${commandPrefix}radio <link/query>\"")
 
-                override fun reply(message: String) {
-                    event.channel.sendMessage(message)
-                }
 
-                override fun joinVoiceChannel(): Boolean {
-                    val voiceState = event.member?.voiceState ?: return false
-                    val channel = voiceState.channel ?: return false
-                    val guild = voiceState.guild
-                    val audioManager = guild.audioManager
-                    audioManager.sendingHandler = jdaSendingHandler
-                    audioManager.openAudioConnection(channel)
-                    return true
                 }
             }
-
-            command.run(context)
         }
-    }
-
-    private val eventListener = EventListener { event ->
-        if (event is ReadyEvent) handleReady(event)
-        if (event is MessageReceivedEvent) handleMessageReceived(event)
     }
 
     fun run() {
         JDABuilder
             .createDefault(token)
-            .addEventListeners(eventListener)
+            .addEventListeners(EventListener { event ->
+                if (event is ReadyEvent) handleReady(event)
+                if (event is MessageReceivedEvent) handleMessageReceived(event)
+            })
             .build()
-            .awaitReady()
     }
 
     fun getCommandPrefix(name: String) = "$commandPrefix$name"
+}
+
+fun createLavaPlayerManager(): AudioPlayerManager {
+    val lavaPlayerManager = DefaultAudioPlayerManager()
+
+    lavaPlayerManager.configuration.frameBufferFactory =
+        AudioFrameBufferFactory { bufferDuration, format, stopping ->
+            NonAllocatingAudioFrameBuffer(
+                bufferDuration,
+                format,
+                stopping
+            )
+        }
+
+    AudioSourceManagers.registerRemoteSources(lavaPlayerManager)
+
+    return lavaPlayerManager
 }
 
 /**
