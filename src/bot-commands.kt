@@ -1,4 +1,4 @@
-val botCommands = listOf(
+fun createBotCommands(state: PlayerState) = listOf(
     Command("play") {
         val source = args.firstOrNull()
             ?: return@Command reply("missing youtube link")

@@ -3,11 +3,11 @@ plugins {
     id 'org.jetbrains.kotlin.jvm' version '1.3.72'
 }
 
-apply plugin: 'java'
-apply plugin: 'kotlin'
-apply plugin: 'application'
-
 group 'net.kingdaro.discordmusicbot'
+
+sourceSets {
+    main.kotlin.srcDirs += 'src'
+}
 
 repositories {
     mavenCentral()
