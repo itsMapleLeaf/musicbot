@@ -5,10 +5,6 @@ plugins {
 
 group 'net.kingdaro.discordmusicbot'
 
-sourceSets {
-    main.kotlin.srcDirs += 'src'
-}
-
 repositories {
     mavenCentral()
     jcenter()

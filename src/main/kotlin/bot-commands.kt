@@ -1,4 +1,8 @@
 fun createBotCommands(state: PlayerState) = listOf(
+    Command("summon") {
+        tryJoinVoiceChannel()
+    },
+
     Command("play") {
         val source = args.firstOrNull()
             ?: return@Command reply("missing youtube link")
