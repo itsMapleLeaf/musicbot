@@ -10,9 +10,3 @@ data class Command(
     val run: CommandContext.() -> Unit
 )
 
-inline fun CommandContext.tryJoinVoiceChannel() {
-    if (!joinVoiceChannel()) {
-        reply("must be in a voice channel")
-        return
-    }
-}

@@ -1,4 +1,4 @@
 fun main() {
-    val state = PlayerState()
+    val state = PlayerController()
     Bot(createBotCommands(state)).run()
 }

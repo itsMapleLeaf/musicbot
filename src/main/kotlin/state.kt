@@ -1,5 +1,4 @@
 import java.time.Duration
-import java.time.temporal.TemporalAmount
 
 data class Song(
     val id: String,
@@ -8,7 +7,7 @@ data class Song(
     val duration: Duration
 )
 
-data class Playlist(
+class Playlist(
     val id: String,
     val guildId: String,
     val name: String,
@@ -33,7 +32,3 @@ sealed class CurrentlyPlaying {
     ) : CurrentlyPlaying()
 }
 
-class PlayerState {
-    val playlists = mutableMapOf<String, Playlist>()
-    var currentlyPlaying: CurrentlyPlaying? = null
-}
