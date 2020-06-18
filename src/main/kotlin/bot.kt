@@ -23,7 +23,6 @@ import net.dv8tion.jda.api.events.ReadyEvent
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.hooks.EventListener
 
-
 private const val commandPrefix = ".."
 
 @UnstableDefault
@@ -68,7 +67,7 @@ class Bot {
                     val embed = EmbedBuilder()
                     for ((index, item) in data.items.withIndex()) {
                         embed.addField(
-                            "${item.snippet.channelTitle.markdownEscape()}",
+                            item.snippet.channelTitle.markdownEscape(),
                             "**`${index + 1}` [${item.snippet.title.markdownEscape()}](https://youtu.be/${item.id.videoId})**",
                             false
                         )
