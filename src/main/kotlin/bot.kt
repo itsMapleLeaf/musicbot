@@ -1,6 +1,6 @@
+
 import kotlinx.serialization.ImplicitReflectionSerializer
 import kotlinx.serialization.UnstableDefault
-import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.JDABuilder
 import net.dv8tion.jda.api.MessageBuilder
 import net.dv8tion.jda.api.entities.Activity
@@ -8,11 +8,12 @@ import net.dv8tion.jda.api.entities.MessageEmbed
 import net.dv8tion.jda.api.events.ReadyEvent
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 
-private const val commandPrefix = ".."
-
 @UnstableDefault
 @ImplicitReflectionSerializer
-class Bot {
+class Bot(
+    private val commands: Map<String, Command>,
+    private val commandPrefix: Regex
+) {
     private val lavaPlayerManager = createLavaPlayerManager()
     private val audioPlayer = lavaPlayerManager.createPlayer()
     private val jdaSendingHandler = AudioPlayerSendHandler(audioPlayer)
@@ -23,44 +24,34 @@ class Bot {
     }
 
     private suspend fun handleMessageReceived(event: MessageReceivedEvent) {
-        val content = event.message.contentStripped
+        val content = event.message.contentStripped.replace(Regex("\\s+"), " ")
+        val match = commandPrefix.find(content)
+        if (match == null || match.range.first != 0) return
 
-        fun reply(content: String? = "", embed: MessageEmbed? = null) {
-            val message = MessageBuilder().apply {
-                if (content != null) setContent(content)
-                if (embed != null) setEmbed(embed)
-            }.build()
+        val contentWithoutPrefix = content.drop(match.value.length)
 
-            event.textChannel.sendMessage(message).queue()
+        val commandEntry = commands.entries.find { (name) ->
+            contentWithoutPrefix.startsWith(name)
         }
 
-        if (content.startsWith(commandPrefix)) {
-            val contentWithoutPrefix = content.drop(commandPrefix.length)
-            val words = contentWithoutPrefix.split(Regex("\\s+"))
-            val command = words[0]
-            val args = words.drop(1)
+        if (commandEntry != null) {
+            val (name, command) = commandEntry
 
-            when (command) {
-                "radio" -> {
-                    val source = args.joinToString(" ")
-                    if (source.isEmpty()) {
-                        return reply("please provide a link or search query! e.g. \"${commandPrefix}radio <link/query>\"")
-                    }
+            val context = object : CommandContext {
+                override val argString = contentWithoutPrefix.drop(name.length)
+                override val args = argString.split(" ")
 
-                    val data = YouTube.searchVideos(source)
+                override fun reply(content: String?, embed: MessageEmbed?) {
+                    val message = MessageBuilder().apply {
+                        if (content != null) setContent(content)
+                        if (embed != null) setEmbed(embed)
+                    }.build()
 
-                    val embed = EmbedBuilder()
-                    for ((index, item) in data.items.withIndex()) {
-                        embed.addField(
-                            item.snippet.channelTitle.markdownEscape(),
-                            "**`${index + 1}` [${item.snippet.title.markdownEscape()}](https://youtu.be/${item.id.videoId})**",
-                            false
-                        )
-                    }
-
-                    reply("found these results:", embed.build())
+                    event.textChannel.sendMessage(message).queue()
                 }
             }
+
+            command.run(context)
         }
     }
 
@@ -75,3 +66,12 @@ class Bot {
     }
 }
 
+class Command(
+    val run: suspend (context: CommandContext) -> Unit
+)
+
+interface CommandContext {
+    val args: List<String>
+    val argString: String
+    fun reply(content: String? = "", embed: MessageEmbed? = null)
+}

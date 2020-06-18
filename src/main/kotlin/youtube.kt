@@ -52,4 +52,6 @@ object YouTube {
 
         return client.get("/search", params).awaitObject(kotlinxDeserializerOf(json))
     }
+
+    fun getVideoUrl(videoId: String) = "https://youtu.be/$videoId"
 }
