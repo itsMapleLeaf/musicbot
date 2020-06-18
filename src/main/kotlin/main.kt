@@ -1,15 +1,14 @@
-
 import kotlinx.serialization.ImplicitReflectionSerializer
 import kotlinx.serialization.UnstableDefault
 import net.dv8tion.jda.api.EmbedBuilder
 
 @UnstableDefault
 @ImplicitReflectionSerializer
-val commands = mapOf(
-    "search" to Command { context ->
+val commands = commandGroup(prefix = Regex("mb\\s")) {
+    command("search") { context ->
         val source = context.argString
         if (source.isEmpty()) {
-            return@Command context.reply("please provide a link or search query!")
+            return@command context.reply("please provide a link or search query!")
         }
 
         val data = YouTube.searchVideos(source)
@@ -25,14 +24,14 @@ val commands = mapOf(
 
         context.reply("found these results:", embed.build())
     }
-)
+}
 
 
 @UnstableDefault
 @ImplicitReflectionSerializer
 suspend fun main() {
     try {
-        Bot(commands, commandPrefix = Regex("mb\\s")).run()
+        Bot(commands).run()
     } catch (e: Exception) {
         e.printStackTrace()
     }

@@ -1,4 +1,3 @@
-
 import net.dv8tion.jda.api.JDABuilder
 import net.dv8tion.jda.api.MessageBuilder
 import net.dv8tion.jda.api.entities.Activity
@@ -6,10 +5,7 @@ import net.dv8tion.jda.api.entities.MessageEmbed
 import net.dv8tion.jda.api.events.ReadyEvent
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 
-class Bot(
-    private val commands: Map<String, Command>,
-    private val commandPrefix: Regex
-) {
+class Bot(private val commands: CommandGroup) {
     private val lavaPlayerManager = createLavaPlayerManager()
     private val audioPlayer = lavaPlayerManager.createPlayer()
     private val jdaSendingHandler = AudioPlayerSendHandler(audioPlayer)
@@ -20,35 +16,21 @@ class Bot(
     }
 
     private suspend fun handleMessageReceived(event: MessageReceivedEvent) {
-        val content = event.message.contentStripped.replace(Regex("\\s+"), " ")
-        val match = commandPrefix.find(content)
-        if (match == null || match.range.first != 0) return
+        val match = commands.findMatchingCommand(event.message.contentStripped) ?: return
 
-        val contentWithoutPrefix = content.drop(match.value.length)
+        match.command.run(object : CommandContext {
+            override val argString = match.inputWithoutPrefix.drop(match.name.length)
+            override val args = argString.split(" ")
 
-        val commandEntry = commands.entries.find { (name) ->
-            contentWithoutPrefix.startsWith(name)
-        }
+            override fun reply(content: String?, embed: MessageEmbed?) {
+                val message = MessageBuilder().apply {
+                    if (content != null) setContent(content)
+                    if (embed != null) setEmbed(embed)
+                }.build()
 
-        if (commandEntry != null) {
-            val (name, command) = commandEntry
-
-            val context = object : CommandContext {
-                override val argString = contentWithoutPrefix.drop(name.length)
-                override val args = argString.split(" ")
-
-                override fun reply(content: String?, embed: MessageEmbed?) {
-                    val message = MessageBuilder().apply {
-                        if (content != null) setContent(content)
-                        if (embed != null) setEmbed(embed)
-                    }.build()
-
-                    event.textChannel.sendMessage(message).queue()
-                }
+                event.textChannel.sendMessage(message).queue()
             }
-
-            command.run(context)
-        }
+        })
     }
 
     suspend fun run() {
@@ -62,12 +44,3 @@ class Bot(
     }
 }
 
-class Command(
-    val run: suspend (context: CommandContext) -> Unit
-)
-
-interface CommandContext {
-    val args: List<String>
-    val argString: String
-    fun reply(content: String? = "", embed: MessageEmbed? = null)
-}
