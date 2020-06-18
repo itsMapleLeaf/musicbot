@@ -22,6 +22,7 @@ import net.dv8tion.jda.api.events.GenericEvent
 import net.dv8tion.jda.api.events.ReadyEvent
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.hooks.EventListener
+import org.unbescape.html.HtmlEscape
 
 private const val commandPrefix = ".."
 
@@ -96,8 +97,8 @@ fun JDA.eventChannel(): ReceiveChannel<GenericEvent> {
     return channel
 }
 
-fun String.markdownEscape() =
-    replace(Regex("[_~*]")) { "\\${it.value}" }
+fun String.markdownEscape(): String =
+    HtmlEscape.unescapeHtml(replace(Regex("[_~*]")) { "\\${it.value}" })
 
 fun createLavaPlayerManager(): AudioPlayerManager {
     val lavaPlayerManager = DefaultAudioPlayerManager()

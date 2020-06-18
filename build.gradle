@@ -23,6 +23,8 @@ dependencies {
     implementation 'com.github.kittinunf.fuel:fuel-coroutines:2.2.3'
     implementation 'com.github.kittinunf.fuel:fuel-kotlinx-serialization:2.2.3'
 
+    implementation 'org.unbescape:unbescape:1.1.6.RELEASE'
+
 //    implementation 'com.google.api-client:google-api-client:1.23.0'
 //    implementation 'com.google.oauth-client:google-oauth-client-jetty:1.23.0'
 //    implementation 'com.google.apis:google-api-services-youtube:v3-rev222-1.25.0'
