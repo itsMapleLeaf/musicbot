@@ -98,7 +98,7 @@ fun JDA.eventChannel(): ReceiveChannel<GenericEvent> {
 }
 
 fun String.markdownEscape(): String =
-    HtmlEscape.unescapeHtml(replace(Regex("[_~*]")) { "\\${it.value}" })
+    HtmlEscape.unescapeHtml(this).replace(Regex("[_~*]")) { "\\${it.value}" }
 
 fun createLavaPlayerManager(): AudioPlayerManager {
     val lavaPlayerManager = DefaultAudioPlayerManager()
