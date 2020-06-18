@@ -1,6 +1,4 @@
 
-import kotlinx.serialization.ImplicitReflectionSerializer
-import kotlinx.serialization.UnstableDefault
 import net.dv8tion.jda.api.JDABuilder
 import net.dv8tion.jda.api.MessageBuilder
 import net.dv8tion.jda.api.entities.Activity
@@ -8,8 +6,6 @@ import net.dv8tion.jda.api.entities.MessageEmbed
 import net.dv8tion.jda.api.events.ReadyEvent
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 
-@UnstableDefault
-@ImplicitReflectionSerializer
 class Bot(
     private val commands: Map<String, Command>,
     private val commandPrefix: Regex
