@@ -33,7 +33,7 @@ class Command(val run: CommandRunFn)
 interface CommandContext {
     val args: List<String>
     val argString: String
-    fun reply(content: String? = "", embed: MessageEmbed? = null)
+    suspend fun reply(content: String? = "", embed: MessageEmbed? = null)
 }
 
 typealias CommandRunFn = suspend (context: CommandContext) -> Unit

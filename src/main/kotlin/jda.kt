@@ -1,3 +1,4 @@
+
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayer
 import com.sedmelluq.discord.lavaplayer.track.playback.MutableAudioFrame
 import kotlinx.coroutines.channels.Channel
@@ -6,8 +7,12 @@ import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.audio.AudioSendHandler
 import net.dv8tion.jda.api.events.GenericEvent
 import net.dv8tion.jda.api.hooks.EventListener
+import net.dv8tion.jda.api.requests.RestAction
 import java.nio.Buffer
 import java.nio.ByteBuffer
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
+import kotlin.coroutines.suspendCoroutine
 
 fun JDA.eventChannel(): ReceiveChannel<GenericEvent> {
     val channel = Channel<GenericEvent>()
@@ -15,6 +20,8 @@ fun JDA.eventChannel(): ReceiveChannel<GenericEvent> {
     return channel
 }
 
+suspend fun <T> RestAction<T>.await() =
+    suspendCoroutine<T> { cont -> queue(cont::resume, cont::resumeWithException) }
 
 /**
  * This is a wrapper around AudioPlayer which makes it behave as an AudioSendHandler for JDA. As JDA calls canProvide

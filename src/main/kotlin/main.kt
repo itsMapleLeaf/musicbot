@@ -4,11 +4,17 @@ import net.dv8tion.jda.api.EmbedBuilder
 
 @UnstableDefault
 @ImplicitReflectionSerializer
+suspend fun main() {
+    Bot(commands).run()
+}
+
+@UnstableDefault
+@ImplicitReflectionSerializer
 val commands = commandGroup(prefix = Regex("mb\\s")) {
     command("search") { context ->
         val source = context.argString
         if (source.isEmpty()) {
-            return@command context.reply("please provide a link or search query!")
+            return@command context.reply("please provide a search query!")
         }
 
         val data = YouTube.searchVideos(source)
@@ -23,16 +29,5 @@ val commands = commandGroup(prefix = Regex("mb\\s")) {
         }
 
         context.reply("found these results:", embed.build())
-    }
-}
-
-
-@UnstableDefault
-@ImplicitReflectionSerializer
-suspend fun main() {
-    try {
-        Bot(commands).run()
-    } catch (e: Exception) {
-        e.printStackTrace()
     }
 }

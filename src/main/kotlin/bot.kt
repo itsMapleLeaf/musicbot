@@ -22,13 +22,13 @@ class Bot(private val commands: CommandGroup) {
             override val argString = match.inputWithoutPrefix.drop(match.name.length)
             override val args = argString.split(" ")
 
-            override fun reply(content: String?, embed: MessageEmbed?) {
+            override suspend fun reply(content: String?, embed: MessageEmbed?) {
                 val message = MessageBuilder().apply {
                     if (content != null) setContent(content)
                     if (embed != null) setEmbed(embed)
                 }.build()
 
-                event.textChannel.sendMessage(message).queue()
+                event.textChannel.sendMessage(message).await()
             }
         })
     }
