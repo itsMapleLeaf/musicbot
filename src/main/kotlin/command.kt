@@ -34,6 +34,7 @@ interface CommandContext {
     val args: List<String>
     val argString: String
     suspend fun reply(content: String? = "", embed: MessageEmbed? = null)
+    suspend fun joinVoiceChannel()
 }
 
 typealias CommandRunFn = suspend (context: CommandContext) -> Unit

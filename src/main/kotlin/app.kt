@@ -11,8 +11,9 @@ object AppController {
     private var currentTrackIndex: Int? = null
 
     private fun getCurrentTrack(): RadioTrack? {
-        val index = currentTrackIndex
-        return if (index != null) currentRadio?.tracks?.getOrNull(index) else null
+        val tracks = currentRadio?.tracks ?: return null
+        val index = currentTrackIndex ?: return null
+        return tracks.getOrNull(index % tracks.size)
     }
 
     @UnstableDefault
@@ -53,8 +54,12 @@ object AppController {
             }
 
             AudioLoadResult.NoMatches ->
-                PlayResult.TryNext
+                PlayResult.TryNext(track)
         }
+    }
+
+    fun goToNext() {
+        currentTrackIndex = currentTrackIndex?.plus(1)
     }
 }
 
@@ -71,10 +76,10 @@ enum class NewRadioResult {
     NoResults,
 }
 
-enum class PlayResult {
-    NoTrack,
-    Played,
-    TryNext,
+sealed class PlayResult {
+    object NoTrack : PlayResult()
+    object Played : PlayResult()
+    data class TryNext(val attemptedToPlay: RadioTrack) : PlayResult()
 }
 
 private fun uuid() = UUID.randomUUID().toString()

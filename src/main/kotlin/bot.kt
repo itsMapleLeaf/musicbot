@@ -7,7 +7,7 @@ import net.dv8tion.jda.api.events.ReadyEvent
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import java.awt.Color
 
-class Bot(private val commands: CommandGroup, jdaSendingHandler: AudioPlayerSendHandler) {
+class Bot(private val commands: CommandGroup, private val jdaSendingHandler: AudioPlayerSendHandler) {
     private fun handleReady(event: ReadyEvent) {
         event.jda.presence.setPresence(Activity.playing("psytrance lol"), false)
         println("Ready")
@@ -27,6 +27,16 @@ class Bot(private val commands: CommandGroup, jdaSendingHandler: AudioPlayerSend
                 }.build()
 
                 event.textChannel.sendMessage(message).await()
+            }
+
+            override suspend fun joinVoiceChannel() {
+                val channel = event.member?.voiceState?.channel
+                    ?: return reply("join a voice channel first!!")
+
+                event.guild.audioManager.apply {
+                    sendingHandler = jdaSendingHandler
+                    openAudioConnection(channel)
+                }
             }
         }
 

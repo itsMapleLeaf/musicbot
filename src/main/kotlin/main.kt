@@ -1,4 +1,3 @@
-
 import kotlinx.serialization.ImplicitReflectionSerializer
 import kotlinx.serialization.UnstableDefault
 import net.dv8tion.jda.api.EmbedBuilder
@@ -31,7 +30,26 @@ val commands = commandGroup(prefix = Regex("mb\\s")) {
         }
     }
 
-    command("play") {}
+    command("play") { context ->
+        context.joinVoiceChannel()
+
+        loop@ while (true) {
+            when (val result = AppController.play()) {
+                is PlayResult.TryNext -> {
+                    context.reply("couldn't play ${result.attemptedToPlay.title}, trying next...")
+                    AppController.goToNext()
+                }
+
+                PlayResult.NoTrack -> {
+                    context.reply("no track to play! start a radio first")
+                    break@loop
+                }
+
+                else ->
+                    break@loop
+            }
+        }
+    }
 
     command("pause") {}
 
