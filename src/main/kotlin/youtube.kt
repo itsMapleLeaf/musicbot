@@ -8,14 +8,14 @@ import kotlinx.serialization.json.Json
 import java.net.MalformedURLException
 import java.net.URL
 
-@UnstableDefault
-@ImplicitReflectionSerializer
 object YouTube {
     private val client = FuelManager().apply {
         basePath = "https://www.googleapis.com/youtube/v3"
         baseParams = listOf("key" to safeGetEnv("GOOGLE_API_KEY"))
     }
 
+    @UnstableDefault
+    @ImplicitReflectionSerializer
     private val json = Json {
         ignoreUnknownKeys = true
     }
@@ -43,6 +43,8 @@ object YouTube {
         val liveBroadcastContent: String
     )
 
+    @UnstableDefault
+    @ImplicitReflectionSerializer
     suspend fun searchVideos(query: String): SearchResponse {
         val params = listOf(
             "part" to "snippet",
@@ -56,6 +58,8 @@ object YouTube {
         return client.get("/search", params).awaitObject(kotlinxDeserializerOf(json))
     }
 
+    @UnstableDefault
+    @ImplicitReflectionSerializer
     suspend fun getRelatedVideos(videoId: String): SearchResponse {
         val params = listOf(
             "part" to "snippet",

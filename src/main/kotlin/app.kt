@@ -1,127 +1,160 @@
-
+import com.sedmelluq.discord.lavaplayer.player.AudioLoadResultHandler
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayer
+import com.sedmelluq.discord.lavaplayer.player.event.AudioEventListener
 import com.sedmelluq.discord.lavaplayer.player.event.TrackEndEvent
 import com.sedmelluq.discord.lavaplayer.player.event.TrackExceptionEvent
 import com.sedmelluq.discord.lavaplayer.player.event.TrackStuckEvent
+import com.sedmelluq.discord.lavaplayer.tools.FriendlyException
+import com.sedmelluq.discord.lavaplayer.track.AudioPlaylist
+import com.sedmelluq.discord.lavaplayer.track.AudioTrack
 import com.sedmelluq.discord.lavaplayer.track.AudioTrackEndReason
 import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.ImplicitReflectionSerializer
 import kotlinx.serialization.UnstableDefault
-import java.util.*
+import net.dv8tion.jda.api.JDABuilder
+import net.dv8tion.jda.api.entities.Activity
+import net.dv8tion.jda.api.entities.MessageChannel
+import net.dv8tion.jda.api.entities.MessageEmbed
+import net.dv8tion.jda.api.events.ExceptionEvent
+import net.dv8tion.jda.api.events.ReadyEvent
+import net.dv8tion.jda.api.events.message.MessageReceivedEvent
+import net.dv8tion.jda.api.hooks.EventListener
+import kotlin.properties.Delegates
 
-class AppController {
-    val lavaPlayerManager = createLavaPlayerManager()
-    val audioPlayer: AudioPlayer = lavaPlayerManager.createPlayer()
+@UnstableDefault
+@ImplicitReflectionSerializer
+class App {
+    private val lavaPlayerManager = createLavaPlayerManager()
+    private val audioPlayer: AudioPlayer = lavaPlayerManager.createPlayer()
+    private val jdaSendHandler = AudioPlayerSendHandler(audioPlayer)
 
-    private var currentRadio: Radio? = null
-    private var currentTrackIndex: Int? = null
+    private val jda = JDABuilder
+        .createDefault(Env.botToken)
+        .addEventListeners(getJdaEventListener())
+        .build()
 
-    val events = Channel<Event>()
+    private var currentChannel: MessageChannel? = null
 
-    fun handleAudioPlayerEvents() {
-        audioPlayer.addListener { event ->
-            when (event) {
-                is TrackEndEvent -> {
-                    if (event.endReason == AudioTrackEndReason.FINISHED) {
-                        goToNext()
-                        GlobalScope.launch { play() }.invokeOnCompletion { it?.printStackTrace() }
-                    }
-                }
-                is TrackExceptionEvent -> {
-                    event.exception.printStackTrace()
-                }
-                is TrackStuckEvent -> {
-                    println("track got stuck: ${event.track.info.title}")
-                }
-            }
+    private var radio by Delegates.observable<Radio?>(null) { _, _, radio ->
+        if (radio != null) handleRadioUpdate(radio)
+    }
+
+    init {
+        audioPlayer.addListener(getAudioPlayerListener())
+    }
+
+    private fun getJdaEventListener() = EventListener { event ->
+        when (event) {
+            is ReadyEvent -> handleReady(event)
+            is MessageReceivedEvent -> GlobalScope.launch { handleMessageReceived(event) }
+            is ExceptionEvent -> event.cause.printStackTrace()
         }
     }
 
-    private fun getCurrentTrack(): RadioTrack? {
-        val tracks = currentRadio?.tracks ?: return null
-        val index = currentTrackIndex ?: return null
-        return tracks.getOrNull(index % tracks.size)
+    private fun getAudioPlayerListener() = AudioEventListener { event ->
+        when (event) {
+            is TrackEndEvent -> {
+                val radio = this.radio
+                if (event.endReason == AudioTrackEndReason.FINISHED && radio != null) {
+                    this.radio = radio.copy(currentIndex = radio.currentIndex + 1)
+                }
+            }
+            is TrackExceptionEvent ->
+                event.exception.printStackTrace()
+
+            is TrackStuckEvent ->
+                println("track got stuck: ${event.track.info.title}")
+
+        }
     }
 
-    @UnstableDefault
-    @ImplicitReflectionSerializer
-    suspend fun loadNewRadio(youtubeVideoId: String): NewRadioResult {
-        val response = YouTube.getRelatedVideos(youtubeVideoId)
-        if (response.items.isEmpty()) {
-            return NewRadioResult.NoResults
-        }
+    private fun handleReady(event: ReadyEvent) {
+        event.jda.presence.setPresence(Activity.playing("some music"), false)
+        println("Ready")
+    }
 
-        val radio = Radio(
-            tracks = response.items.map { item ->
-                RadioTrack(
-                    title = item.snippet.title,
-                    source = YouTube.getVideoUrl(item.id.videoId)
-                )
-            }
+    private fun handleMessageReceived(event: MessageReceivedEvent) {
+        currentChannel = event.textChannel
+
+        val content = event.message.contentStripped.replace(Regex("\\s+"), " ").trim()
+        if (!content.startsWith("mb")) return
+
+        val words = Regex("\\S+").findAll(content.drop(2)).map { it.value }.toList()
+        if (words.isEmpty()) return
+
+        handleBotCommand(
+            BotCommand(
+                name = words.first(),
+                args = words.drop(1),
+                argString = words.drop(1).joinToString(" "),
+                event = event
+            )
         )
-
-        currentRadio = radio
-        currentTrackIndex = 0
-
-        return NewRadioResult.Success
     }
 
-    suspend fun play(onTryNext: (suspend (RadioTrack) -> Unit)? = {}): PlayResult {
-        val track = getCurrentTrack() ?: return PlayResult.NoTrack
+    private fun handleRadioUpdate(radio: Radio) {
+        lavaPlayerManager.loadItem(radio.currentTrack().source, object : AudioLoadResultHandler {
+            override fun loadFailed(exception: FriendlyException) = exception.printStackTrace()
 
-        val loadResult = lavaPlayerManager.loadItem(track.source)
-        if (loadResult == AudioLoadResult.NoMatches) {
-            onTryNext?.invoke(track)
-            goToNext()
-            return play(onTryNext)
+            override fun noMatches() {
+                // couldn't load track
+            }
+
+            override fun trackLoaded(track: AudioTrack) {
+                audioPlayer.playTrack(track)
+                currentChannel?.sendMessage(createMessage("now playing: ${track.info.title}"))
+            }
+
+            override fun playlistLoaded(playlist: AudioPlaylist) {
+                val track = playlist.tracks.first()
+                audioPlayer.playTrack(track)
+                currentChannel?.sendMessage(createMessage("now playing: ${track.info.title}"))
+            }
+        })
+    }
+
+    private fun handleBotCommand(command: BotCommand) {
+        fun reply(text: String? = null, embed: MessageEmbed? = null) {
+            command.event.textChannel.sendMessage(createMessage(text, embed)).queue()
         }
 
-        val audioTrack = when (loadResult) {
-            is AudioLoadResult.TrackLoaded -> loadResult.track
-            is AudioLoadResult.PlaylistLoaded -> loadResult.playlist.tracks.first()
-            else -> error("this shouldn't happen")
+        fun joinVoiceChannel() {
+            val voiceChannel = command.event.member?.voiceState?.channel
+                ?: return reply("must be in a voice channel!")
+
+            command.event.guild.audioManager.apply {
+                sendingHandler = jdaSendHandler
+                openAudioConnection(voiceChannel)
+            }
         }
 
-        audioPlayer.playTrack(audioTrack)
-        events.offer(Event.PlayedTrack(track))
-        return PlayResult.Played(track)
+        when (command.name) {
+            "radio" -> {
+                val videoId = YouTube.getVideoId(command.argString)
+                    ?: return reply("couldn't get youtube ID; only youtube links are supported at the moment!")
+
+                loadNewRadio(videoId)
+            }
+        }
     }
 
-    fun pause() {
-        audioPlayer.isPaused = true
+    private fun loadNewRadio(videoId: String) {
+        val response = runBlocking { YouTube.getRelatedVideos(videoId) }
+
+        val tracks = response.items.map { item ->
+            RadioTrack(title = item.snippet.title, source = YouTube.getVideoUrl(item.id.videoId))
+        }
+
+        this.radio = Radio(tracks = tracks, currentIndex = 0)
     }
 
-    fun resume() {
-        audioPlayer.isPaused = false
-    }
-
-    private fun goToNext() {
-        currentTrackIndex = currentTrackIndex?.plus(1)
-    }
-
-    sealed class Event {
-        data class PlayedTrack(val track: RadioTrack) : Event()
-    }
+    private data class BotCommand(
+        val name: String,
+        val args: List<String>,
+        val argString: String,
+        val event: MessageReceivedEvent
+    )
 }
 
-data class Radio(val tracks: List<RadioTrack>)
-
-data class RadioTrack(
-    val id: String = uuid(),
-    val title: String,
-    val source: String
-)
-
-enum class NewRadioResult {
-    Success,
-    NoResults,
-}
-
-sealed class PlayResult {
-    object NoTrack : PlayResult()
-    data class Played(val track: RadioTrack) : PlayResult()
-}
-
-private fun uuid() = UUID.randomUUID().toString()

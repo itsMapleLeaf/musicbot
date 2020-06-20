@@ -1,10 +1,11 @@
-
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayer
 import com.sedmelluq.discord.lavaplayer.track.playback.MutableAudioFrame
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ReceiveChannel
 import net.dv8tion.jda.api.JDA
+import net.dv8tion.jda.api.MessageBuilder
 import net.dv8tion.jda.api.audio.AudioSendHandler
+import net.dv8tion.jda.api.entities.MessageEmbed
 import net.dv8tion.jda.api.events.GenericEvent
 import net.dv8tion.jda.api.hooks.EventListener
 import net.dv8tion.jda.api.requests.RestAction
@@ -54,3 +55,10 @@ class AudioPlayerSendHandler(private val audioPlayer: AudioPlayer) : AudioSendHa
         frame.setBuffer(buffer)
     }
 }
+
+fun createMessage(content: String? = null, embed: MessageEmbed? = null) =
+    MessageBuilder().run {
+        if (content != null) setContent(content)
+        if (embed != null) setEmbed(embed)
+        build()
+    }
