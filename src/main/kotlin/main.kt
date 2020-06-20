@@ -57,15 +57,15 @@ val commands = commandGroup(prefix = Regex("mb\\s")) {
 
     command("queue") {}
 
-    command("search") { context ->
-        val source = context.argString
-        if (source.isEmpty()) {
-            return@command context.reply("please provide a search query!")
-        }
-
-        val response = YouTube.searchVideos(source)
-        context.reply("found these results:", createSearchResponseEmbed(response))
-    }
+//    command("search") { context ->
+//        val source = context.argString
+//        if (source.isEmpty()) {
+//            return@command context.reply("please provide a search query!")
+//        }
+//
+//        val response = YouTube.searchVideos(source)
+//        context.reply("found these results:", createSearchResponseEmbed(response))
+//    }
 }
 
 @UnstableDefault
