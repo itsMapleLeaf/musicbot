@@ -1,9 +1,10 @@
 - commands:
     - [x] radio
     - [x] play
-    - [ ] pause
+    - [ ] pause, stop
     - [x] skip
-    - [ ] queue
+    - [ ] queue, np, nowplaying, song
+    - [ ] help (oh god)
 - [ ] announce playing track
 - [ ] persist radio & current track
 - [x] play next track after current one is finished
