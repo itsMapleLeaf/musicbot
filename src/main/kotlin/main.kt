@@ -4,8 +4,6 @@ import kotlinx.serialization.UnstableDefault
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.entities.MessageEmbed
 
-var boundChannelId: String? = null
-
 @UnstableDefault
 @ImplicitReflectionSerializer
 val commands = commandGroup(prefix = Regex("mb\\s")) {
@@ -36,27 +34,25 @@ val commands = commandGroup(prefix = Regex("mb\\s")) {
     command("play") { context ->
         context.joinVoiceChannel()
 
-        loop@ while (true) {
-            when (val result = AppController.play()) {
-                is PlayResult.TryNext -> {
-                    context.reply("couldn't play ${result.attemptedToPlay.title}, trying next...")
-                    AppController.goToNext()
-                }
-
+        tailrec suspend fun tryPlay() {
+            return when (val result = AppController.play()) {
                 PlayResult.NoTrack -> {
                     context.reply("no track to play! start a radio first")
-                    break@loop
                 }
 
                 is PlayResult.Played -> {
                     context.reply("playing: ${result.track.title}")
-                    break@loop
                 }
 
-                else ->
-                    break@loop
+                is PlayResult.TryNext -> {
+                    context.reply("couldn't play ${result.attemptedToPlay.title}, trying next...")
+                    AppController.goToNext()
+                    tryPlay()
+                }
             }
         }
+
+        tryPlay()
     }
 
     command("pause") { context -> context.reply("stop trying it doesn't work yet goddAMMIT") }
