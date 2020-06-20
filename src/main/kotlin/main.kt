@@ -1,11 +1,8 @@
+
 import kotlinx.serialization.ImplicitReflectionSerializer
 import kotlinx.serialization.UnstableDefault
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.entities.MessageEmbed
-
-private val lavaPlayerManager = createLavaPlayerManager()
-private val audioPlayer = lavaPlayerManager.createPlayer()
-
 
 @UnstableDefault
 @ImplicitReflectionSerializer
@@ -25,28 +22,13 @@ val commands = commandGroup(prefix = Regex("mb\\s")) {
         val videoId = YouTube.getVideoId(context.argString)
             ?: return@command context.reply("couldn't get youtube ID; only youtube links are supported at the moment!")
 
-//        val relatedVideosUrl =
-//            "https://www.googleapis.com/youtube/v3/" +
-//                    "?key=${safeGetEnv("GOOGLE_API_KEY")}" +
-//                    "&relatedToVideoId=$videoId" +
-//                    "&part=snippet" +
-//                    "&type=video" +
-//                    "&videoSyndicated=true" +
-//                    "&maxResults=50"
-//
-//        when (val result = lavaPlayerManager.loadItem(relatedVideosUrl)) {
-//            is AudioLoadResult.TrackLoaded ->
-//                context.reply("loaded track \"${result.track.info.title}\"")
-//
-//            is AudioLoadResult.PlaylistLoaded ->
-//                context.reply("loaded playlist with ${result.playlist.tracks.size} tracks")
-//
-//            AudioLoadResult.NoMatches ->
-//                context.reply("no matches :(")
-//        }
+        when (AppController.loadNewRadio(videoId)) {
+            NewRadioResult.Success ->
+                context.reply("radio loaded! run `mb play` to start (i'll eventually do this automatically)")
 
-        val response = YouTube.getRelatedVideos(videoId)
-        context.reply("found ${response.items.size} related tracks", createSearchResponseEmbed(response))
+            NewRadioResult.NoResults ->
+                context.reply("couldn't get youtube ID; only youtube links are supported at the moment!")
+        }
     }
 
     command("play") {}
