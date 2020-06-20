@@ -37,6 +37,8 @@ val commands = commandGroup(prefix = Regex("mb\\s")) {
 
     command("skip") {}
 
+    command("queue") {}
+
     command("search") { context ->
         val source = context.argString
         if (source.isEmpty()) {
