@@ -5,6 +5,7 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.ImplicitReflectionSerializer
 import kotlinx.serialization.UnstableDefault
 import net.dv8tion.jda.api.EmbedBuilder
+import net.dv8tion.jda.api.entities.Activity
 import net.dv8tion.jda.api.entities.MessageEmbed
 
 val app = AppController()
@@ -82,6 +83,7 @@ suspend fun main() {
         for (event in app.events) {
             when (event) {
                 is AppController.Event.PlayedTrack -> {
+                    bot.setPlayingTrack(event.track.title)
                     bot.sendMessageInBoundChannel("playing: ${event.track.title}")
                 }
             }

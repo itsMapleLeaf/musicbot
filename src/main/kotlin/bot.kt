@@ -1,4 +1,5 @@
 import net.dv8tion.jda.api.EmbedBuilder
+import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.JDABuilder
 import net.dv8tion.jda.api.MessageBuilder
 import net.dv8tion.jda.api.entities.Activity
@@ -19,9 +20,10 @@ suspend fun MessageChannel.sendMessageAsync(content: String?, embed: MessageEmbe
 
 class Bot(private val commands: CommandGroup, private val jdaSendingHandler: AudioPlayerSendHandler) {
     var boundChannel: MessageChannel? = null
+    var jda: JDA? = null
 
     private fun handleReady(event: ReadyEvent) {
-        event.jda.presence.setPresence(Activity.playing("psytrance lol"), false)
+        event.jda.presence.setPresence(Activity.listening("mb radio"), false)
         println("Ready")
     }
 
@@ -64,6 +66,7 @@ class Bot(private val commands: CommandGroup, private val jdaSendingHandler: Aud
 
     suspend fun run() {
         val jda = JDABuilder.createDefault(Env.botToken).build()
+        this.jda = jda
         for (event in jda.eventChannel()) {
             when (event) {
                 is ReadyEvent -> handleReady(event)
@@ -74,6 +77,10 @@ class Bot(private val commands: CommandGroup, private val jdaSendingHandler: Aud
 
     suspend fun sendMessageInBoundChannel(content: String? = null, embed: MessageEmbed? = null) {
         boundChannel?.sendMessageAsync(content, embed)
+    }
+
+    fun setPlayingTrack(title: String) {
+        jda?.presence?.setPresence(Activity.playing(title), false)
     }
 }
 
