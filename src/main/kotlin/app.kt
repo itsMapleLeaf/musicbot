@@ -3,7 +3,9 @@ import com.sedmelluq.discord.lavaplayer.player.AudioPlayer
 import com.sedmelluq.discord.lavaplayer.player.event.TrackEndEvent
 import com.sedmelluq.discord.lavaplayer.player.event.TrackExceptionEvent
 import com.sedmelluq.discord.lavaplayer.player.event.TrackStuckEvent
+import com.sedmelluq.discord.lavaplayer.track.AudioTrackEndReason
 import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
 import kotlinx.serialization.ImplicitReflectionSerializer
 import kotlinx.serialization.UnstableDefault
@@ -12,20 +14,19 @@ import java.util.*
 val lavaPlayerManager = createLavaPlayerManager()
 val audioPlayer: AudioPlayer = lavaPlayerManager.createPlayer()
 
-object AppController {
+class AppController {
     private var currentRadio: Radio? = null
     private var currentTrackIndex: Int? = null
 
-    private val isPlaying get() = getCurrentTrack() != null
+    val events = Channel<Event>()
 
     fun handleAudioPlayerEvents() {
         audioPlayer.addListener { event ->
             when (event) {
                 is TrackEndEvent -> {
-                    val radioTrack = getCurrentTrack()
-                    if (event.track.identifier == radioTrack?.source) {
+                    if (event.endReason == AudioTrackEndReason.FINISHED) {
                         goToNext()
-                        GlobalScope.launch { play() }
+                        GlobalScope.launch { play() }.invokeOnCompletion { it?.printStackTrace() }
                     }
                 }
                 is TrackExceptionEvent -> {
@@ -67,33 +68,41 @@ object AppController {
         return NewRadioResult.Success
     }
 
-    suspend fun play(): PlayResult {
-        if (isPlaying) return PlayResult.AlreadyPlaying
-
+    suspend fun play(onTryNext: (suspend (RadioTrack) -> Unit)? = {}): PlayResult {
         val track = getCurrentTrack() ?: return PlayResult.NoTrack
 
-        return when (val result = lavaPlayerManager.loadItem(track.source)) {
-            is AudioLoadResult.TrackLoaded -> {
-                audioPlayer.playTrack(result.track)
-                PlayResult.Played(track)
-            }
-
-            is AudioLoadResult.PlaylistLoaded -> {
-                audioPlayer.playTrack(result.playlist.tracks.first())
-                PlayResult.Played(track)
-            }
-
-            AudioLoadResult.NoMatches ->
-                PlayResult.TryNext(track)
+        val loadResult = lavaPlayerManager.loadItem(track.source)
+        if (loadResult == AudioLoadResult.NoMatches) {
+            onTryNext?.invoke(track)
+            goToNext()
+            return play(onTryNext)
         }
+
+        val audioTrack = when (loadResult) {
+            is AudioLoadResult.TrackLoaded -> loadResult.track
+            is AudioLoadResult.PlaylistLoaded -> loadResult.playlist.tracks.first()
+            else -> error("this shouldn't happen")
+        }
+
+        audioPlayer.playTrack(audioTrack)
+        events.offer(Event.PlayedTrack(track))
+        return PlayResult.Played(track)
     }
 
-//    fun pause() {
-//        audioPlayer.isPaused = true
-//    }
+    fun pause() {
+        audioPlayer.isPaused = true
+    }
 
-    fun goToNext() {
+    fun resume() {
+        audioPlayer.isPaused = false
+    }
+
+    private fun goToNext() {
         currentTrackIndex = currentTrackIndex?.plus(1)
+    }
+
+    sealed class Event {
+        data class PlayedTrack(val track: RadioTrack) : Event()
     }
 }
 
@@ -111,10 +120,8 @@ enum class NewRadioResult {
 }
 
 sealed class PlayResult {
-    object AlreadyPlaying : PlayResult()
     object NoTrack : PlayResult()
     data class Played(val track: RadioTrack) : PlayResult()
-    data class TryNext(val attemptedToPlay: RadioTrack) : PlayResult()
 }
 
 private fun uuid() = UUID.randomUUID().toString()

@@ -1,14 +1,16 @@
 - commands:
     - [x] radio
     - [x] play
-    - [ ] pause, stop
+    - [x] pause
+        - [ ] stop alias
     - [ ] skip
     - [ ] queue, np, nowplaying, song
     - [ ] help (oh god)
 - [ ] command aliases
 - [x] announce playing track
+    - [ ] use a rich embed which links to the video
 - [ ] persist radio & current track
 - [x] play next track after current one is finished
-- [ ] add radio source to the start of radio tracks
+- [ ] add radio source to the start of radio track lists
 - [x] sanity checks for playing
-- [ ] starting a new radio should stop the current playing track(?)
+- [x] starting a new radio should stop the current playing track(?)

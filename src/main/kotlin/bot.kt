@@ -2,12 +2,24 @@ import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.JDABuilder
 import net.dv8tion.jda.api.MessageBuilder
 import net.dv8tion.jda.api.entities.Activity
+import net.dv8tion.jda.api.entities.MessageChannel
 import net.dv8tion.jda.api.entities.MessageEmbed
 import net.dv8tion.jda.api.events.ReadyEvent
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import java.awt.Color
 
+suspend fun MessageChannel.sendMessageAsync(content: String?, embed: MessageEmbed?) {
+    val message = MessageBuilder().apply {
+        if (content != null) setContent(content)
+        if (embed != null) setEmbed(embed)
+    }.build()
+
+    sendMessage(message).await()
+}
+
 class Bot(private val commands: CommandGroup, private val jdaSendingHandler: AudioPlayerSendHandler) {
+    var boundChannel: MessageChannel? = null
+
     private fun handleReady(event: ReadyEvent) {
         event.jda.presence.setPresence(Activity.playing("psytrance lol"), false)
         println("Ready")
@@ -21,12 +33,7 @@ class Bot(private val commands: CommandGroup, private val jdaSendingHandler: Aud
             override val args = argString.split(" ")
 
             override suspend fun reply(content: String?, embed: MessageEmbed?) {
-                val message = MessageBuilder().apply {
-                    if (content != null) setContent(content)
-                    if (embed != null) setEmbed(embed)
-                }.build()
-
-                event.textChannel.sendMessage(message).await()
+                event.textChannel.sendMessageAsync(content, embed)
             }
 
             override suspend fun joinVoiceChannel() {
@@ -41,6 +48,7 @@ class Bot(private val commands: CommandGroup, private val jdaSendingHandler: Aud
         }
 
         try {
+            boundChannel = event.channel
             match.command.run(context)
         } catch (e: Exception) {
             context.reply(
@@ -62,6 +70,10 @@ class Bot(private val commands: CommandGroup, private val jdaSendingHandler: Aud
                 is MessageReceivedEvent -> handleMessageReceived(event)
             }
         }
+    }
+
+    suspend fun sendMessageInBoundChannel(content: String? = null, embed: MessageEmbed? = null) {
+        boundChannel?.sendMessageAsync(content, embed)
     }
 }
 
