@@ -60,12 +60,12 @@ object AppController {
         return when (val result = lavaPlayerManager.loadItem(track.source)) {
             is AudioLoadResult.TrackLoaded -> {
                 audioPlayer.playTrack(result.track)
-                PlayResult.Played
+                PlayResult.Played(track)
             }
 
             is AudioLoadResult.PlaylistLoaded -> {
                 audioPlayer.playTrack(result.playlist.tracks.first())
-                PlayResult.Played
+                PlayResult.Played(track)
             }
 
             AudioLoadResult.NoMatches ->
@@ -93,7 +93,7 @@ enum class NewRadioResult {
 
 sealed class PlayResult {
     object NoTrack : PlayResult()
-    object Played : PlayResult()
+    data class Played(val track: RadioTrack) : PlayResult()
     data class TryNext(val attemptedToPlay: RadioTrack) : PlayResult()
 }
 

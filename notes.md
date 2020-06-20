@@ -2,10 +2,11 @@
     - [x] radio
     - [x] play
     - [ ] pause, stop
-    - [x] skip
+    - [ ] skip
     - [ ] queue, np, nowplaying, song
     - [ ] help (oh god)
-- [ ] announce playing track
+- [ ] command aliases
+- [x] announce playing track
 - [ ] persist radio & current track
 - [x] play next track after current one is finished
 - [ ] add radio source to the start of radio tracks

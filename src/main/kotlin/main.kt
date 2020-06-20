@@ -48,17 +48,22 @@ val commands = commandGroup(prefix = Regex("mb\\s")) {
                     break@loop
                 }
 
+                is PlayResult.Played -> {
+                    context.reply("playing: ${result.track.title}")
+                    break@loop
+                }
+
                 else ->
                     break@loop
             }
         }
     }
 
-    command("pause") {}
+    command("pause") { context -> context.reply("stop trying it doesn't work yet goddAMMIT") }
 
-    command("skip") {}
+    command("skip") { context -> context.reply("stop trying it doesn't work yet goddAMMIT") }
 
-    command("queue") { context -> context.reply("stop trying it doesn't work yet") }
+    command("queue") { context -> context.reply("stop trying it doesn't work yet goddAMMIT") }
 
 //    command("search") { context ->
 //        val source = context.argString
