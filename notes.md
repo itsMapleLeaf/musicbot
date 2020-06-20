@@ -14,3 +14,5 @@
 - [ ] add radio source to the start of radio track lists
 - [x] sanity checks for playing
 - [x] starting a new radio should stop the current playing track(?)
+- [ ] add via search term
+    - [ ] search list?
