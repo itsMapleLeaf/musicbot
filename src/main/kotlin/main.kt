@@ -44,6 +44,9 @@ val commands = commandGroup(prefix = Regex("mb\\s")) {
                     context.reply("playing: ${result.track.title}")
                 }
 
+                PlayResult.AlreadyPlaying ->
+                    context.reply("already playing!")
+
                 is PlayResult.TryNext -> {
                     context.reply("couldn't play ${result.attemptedToPlay.title}, trying next...")
                     AppController.goToNext()

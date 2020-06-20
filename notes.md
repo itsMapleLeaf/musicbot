@@ -10,3 +10,5 @@
 - [ ] persist radio & current track
 - [x] play next track after current one is finished
 - [ ] add radio source to the start of radio tracks
+- [x] sanity checks for playing
+- [ ] starting a new radio should stop the current playing track(?)
