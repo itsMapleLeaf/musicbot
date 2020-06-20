@@ -39,7 +39,8 @@ object YouTube {
     @Serializable
     data class SearchResponseItemSnippet(
         val title: String,
-        val channelTitle: String
+        val channelTitle: String,
+        val liveBroadcastContent: String
     )
 
     suspend fun searchVideos(query: String): SearchResponse {
@@ -65,7 +66,10 @@ object YouTube {
             "maxResults" to "50"
         )
 
-        return client.get("/search", params).awaitObject(kotlinxDeserializerOf(json))
+        val response = client.get("/search", params)
+            .awaitObject<SearchResponse>(kotlinxDeserializerOf(json))
+
+        return response.copy(items = response.items.filter { it.snippet.liveBroadcastContent == "none" })
     }
 
     fun getVideoUrl(videoId: String) = "https://youtu.be/$videoId"
