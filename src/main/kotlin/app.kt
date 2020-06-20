@@ -1,4 +1,8 @@
+
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayer
+import com.sedmelluq.discord.lavaplayer.player.event.TrackEndEvent
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 import kotlinx.serialization.ImplicitReflectionSerializer
 import kotlinx.serialization.UnstableDefault
 import java.util.*
@@ -9,6 +13,17 @@ val audioPlayer: AudioPlayer = lavaPlayerManager.createPlayer()
 object AppController {
     private var currentRadio: Radio? = null
     private var currentTrackIndex: Int? = null
+
+    fun handleAudioPlayerEvents() {
+        audioPlayer.addListener { event ->
+            when (event) {
+                is TrackEndEvent -> {
+                    goToNext()
+                    GlobalScope.launch { play() }
+                }
+            }
+        }
+    }
 
     private fun getCurrentTrack(): RadioTrack? {
         val tracks = currentRadio?.tracks ?: return null

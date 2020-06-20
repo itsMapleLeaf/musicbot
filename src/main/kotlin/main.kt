@@ -1,7 +1,10 @@
+
 import kotlinx.serialization.ImplicitReflectionSerializer
 import kotlinx.serialization.UnstableDefault
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.entities.MessageEmbed
+
+var boundChannelId: String? = null
 
 @UnstableDefault
 @ImplicitReflectionSerializer
@@ -71,5 +74,6 @@ val commands = commandGroup(prefix = Regex("mb\\s")) {
 @UnstableDefault
 @ImplicitReflectionSerializer
 suspend fun main() {
+    AppController.handleAudioPlayerEvents()
     Bot(commands, AudioPlayerSendHandler(audioPlayer)).run()
 }

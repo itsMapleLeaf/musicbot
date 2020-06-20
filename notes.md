@@ -1,0 +1,10 @@
+- commands:
+    - [x] radio
+    - [x] play
+    - [ ] pause
+    - [x] skip
+    - [ ] queue
+- [ ] announce playing track
+- [ ] persist radio & current track
+- [x] play next track after current one is finished
+- [ ] add radio source to the start of radio tracks
