@@ -5,6 +5,8 @@ import kotlinx.serialization.ImplicitReflectionSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.UnstableDefault
 import kotlinx.serialization.json.Json
+import java.net.MalformedURLException
+import java.net.URL
 
 @UnstableDefault
 @ImplicitReflectionSerializer
@@ -53,5 +55,36 @@ object YouTube {
         return client.get("/search", params).awaitObject(kotlinxDeserializerOf(json))
     }
 
+    suspend fun getRelatedVideos(videoId: String): SearchResponse {
+        val params = listOf(
+            "part" to "snippet",
+            "relatedToVideoId" to videoId,
+            "type" to "video",
+            "videoSyndicated" to "true",
+            "relevanceLanguage" to "en",
+            "maxResults" to "50"
+        )
+
+        return client.get("/search", params).awaitObject(kotlinxDeserializerOf(json))
+    }
+
     fun getVideoUrl(videoId: String) = "https://youtu.be/$videoId"
+
+    fun getVideoId(urlString: String): String? {
+        val url = try {
+            URL(urlString.replace(Regex("^(https?://)?"), "https://"))
+        } catch (e: MalformedURLException) {
+            return null
+        }
+
+        return when {
+            url.host.endsWith("youtube.com") && url.path == "/watch" ->
+                parseQueryString(url.query)["v"]
+
+            url.host.endsWith("youtu.be") ->
+                url.path.removePrefix("/")
+
+            else -> null
+        }
+    }
 }

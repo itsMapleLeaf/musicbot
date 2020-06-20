@@ -8,11 +8,11 @@ class CommandGroup(prefix: Regex) {
     private val prefixAtStart = Regex("^${prefix.pattern}")
 
     fun findMatchingCommand(inputRaw: String): CommandMatch? {
-        val input = inputRaw.replace(spacesRegex, " ")
+        val input = inputRaw.replace(spacesRegex, " ").trim()
 
         val match = prefixAtStart.find(input) ?: return null
 
-        val inputWithoutPrefix = input.drop(match.value.length)
+        val inputWithoutPrefix = input.drop(match.value.length).trim()
 
         val (name, command) = commands.entries
             .find { (name) -> inputWithoutPrefix.startsWith(name) }

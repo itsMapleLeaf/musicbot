@@ -1,15 +1,13 @@
+import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.JDABuilder
 import net.dv8tion.jda.api.MessageBuilder
 import net.dv8tion.jda.api.entities.Activity
 import net.dv8tion.jda.api.entities.MessageEmbed
 import net.dv8tion.jda.api.events.ReadyEvent
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
+import java.awt.Color
 
-class Bot(private val commands: CommandGroup) {
-    private val lavaPlayerManager = createLavaPlayerManager()
-    private val audioPlayer = lavaPlayerManager.createPlayer()
-    private val jdaSendingHandler = AudioPlayerSendHandler(audioPlayer)
-
+class Bot(private val commands: CommandGroup, jdaSendingHandler: AudioPlayerSendHandler) {
     private fun handleReady(event: ReadyEvent) {
         event.jda.presence.setPresence(Activity.playing("psytrance lol"), false)
         println("Ready")
@@ -18,8 +16,8 @@ class Bot(private val commands: CommandGroup) {
     private suspend fun handleMessageReceived(event: MessageReceivedEvent) {
         val match = commands.findMatchingCommand(event.message.contentStripped) ?: return
 
-        match.command.run(object : CommandContext {
-            override val argString = match.inputWithoutPrefix.drop(match.name.length)
+        val context = object : CommandContext {
+            override val argString = match.inputWithoutPrefix.drop(match.name.length).trim()
             override val args = argString.split(" ")
 
             override suspend fun reply(content: String?, embed: MessageEmbed?) {
@@ -30,7 +28,20 @@ class Bot(private val commands: CommandGroup) {
 
                 event.textChannel.sendMessage(message).await()
             }
-        })
+        }
+
+        try {
+            match.command.run(context)
+        } catch (e: Exception) {
+            context.reply(
+                embed = EmbedBuilder()
+                    .setTitle("error lol")
+                    .setDescription("${e.message}")
+                    .setColor(Color.RED)
+                    .build()
+            )
+            e.printStackTrace()
+        }
     }
 
     suspend fun run() {
