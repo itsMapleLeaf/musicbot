@@ -11,10 +11,10 @@ import kotlinx.serialization.ImplicitReflectionSerializer
 import kotlinx.serialization.UnstableDefault
 import java.util.*
 
-val lavaPlayerManager = createLavaPlayerManager()
-val audioPlayer: AudioPlayer = lavaPlayerManager.createPlayer()
-
 class AppController {
+    val lavaPlayerManager = createLavaPlayerManager()
+    val audioPlayer: AudioPlayer = lavaPlayerManager.createPlayer()
+
     private var currentRadio: Radio? = null
     private var currentTrackIndex: Int? = null
 

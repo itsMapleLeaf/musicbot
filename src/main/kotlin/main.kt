@@ -1,18 +1,18 @@
 
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
 import kotlinx.serialization.ImplicitReflectionSerializer
 import kotlinx.serialization.UnstableDefault
 import net.dv8tion.jda.api.EmbedBuilder
-import net.dv8tion.jda.api.entities.Activity
 import net.dv8tion.jda.api.entities.MessageEmbed
-
-val app = AppController()
 
 @UnstableDefault
 @ImplicitReflectionSerializer
-val commands = commandGroup(prefix = Regex("mb\\s")) {
+fun createCommands(app: AppController) = commandGroup(prefix = Regex("mb\\s")) {
     fun createSearchResponseEmbed(response: YouTube.SearchResponse): MessageEmbed {
         val embed = EmbedBuilder()
         for ((index, item) in response.items.withIndex()) {
@@ -71,13 +71,24 @@ val commands = commandGroup(prefix = Regex("mb\\s")) {
 //    }
 }
 
+fun foo(): Flow<Int> = flow { // flow builder
+    for (i in 1..3) {
+        delay(100) // pretend we are doing something useful here
+        emit(i) // emit next value
+    }
+}
+
 @ExperimentalCoroutinesApi
 @UnstableDefault
 @ImplicitReflectionSerializer
-suspend fun main() {
+fun main() {
+    val app = AppController()
     app.handleAudioPlayerEvents()
 
-    val bot = Bot(commands, AudioPlayerSendHandler(audioPlayer))
+    val bot = Bot(
+        createCommands(app),
+        AudioPlayerSendHandler(app.audioPlayer)
+    )
 
     GlobalScope.launch {
         for (event in app.events) {
@@ -89,6 +100,4 @@ suspend fun main() {
             }
         }
     }.invokeOnCompletion { e -> e?.printStackTrace() }
-
-    bot.run()
 }

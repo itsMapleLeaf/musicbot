@@ -1,12 +1,16 @@
+
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 import net.dv8tion.jda.api.EmbedBuilder
-import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.JDABuilder
 import net.dv8tion.jda.api.MessageBuilder
 import net.dv8tion.jda.api.entities.Activity
 import net.dv8tion.jda.api.entities.MessageChannel
 import net.dv8tion.jda.api.entities.MessageEmbed
+import net.dv8tion.jda.api.events.ExceptionEvent
 import net.dv8tion.jda.api.events.ReadyEvent
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
+import net.dv8tion.jda.api.hooks.EventListener
 import java.awt.Color
 
 suspend fun MessageChannel.sendMessageAsync(content: String?, embed: MessageEmbed?) {
@@ -19,8 +23,20 @@ suspend fun MessageChannel.sendMessageAsync(content: String?, embed: MessageEmbe
 }
 
 class Bot(private val commands: CommandGroup, private val jdaSendingHandler: AudioPlayerSendHandler) {
-    var boundChannel: MessageChannel? = null
-    var jda: JDA? = null
+    private val jda = JDABuilder
+        .createDefault(Env.botToken)
+        .addEventListeners(getEventListener())
+        .build()
+
+    private var boundChannel: MessageChannel? = null
+
+    private fun getEventListener() = EventListener { event ->
+        when (event) {
+            is ReadyEvent -> handleReady(event)
+            is MessageReceivedEvent -> GlobalScope.launch { handleMessageReceived(event) }
+            is ExceptionEvent -> event.cause.printStackTrace()
+        }
+    }
 
     private fun handleReady(event: ReadyEvent) {
         event.jda.presence.setPresence(Activity.listening("mb radio"), false)
@@ -64,23 +80,12 @@ class Bot(private val commands: CommandGroup, private val jdaSendingHandler: Aud
         }
     }
 
-    suspend fun run() {
-        val jda = JDABuilder.createDefault(Env.botToken).build()
-        this.jda = jda
-        for (event in jda.eventChannel()) {
-            when (event) {
-                is ReadyEvent -> handleReady(event)
-                is MessageReceivedEvent -> handleMessageReceived(event)
-            }
-        }
-    }
-
     suspend fun sendMessageInBoundChannel(content: String? = null, embed: MessageEmbed? = null) {
         boundChannel?.sendMessageAsync(content, embed)
     }
 
     fun setPlayingTrack(title: String) {
-        jda?.presence?.setPresence(Activity.playing(title), false)
+        jda.presence.setPresence(Activity.playing(title), false)
     }
 }
 
