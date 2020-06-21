@@ -22,7 +22,6 @@ import net.dv8tion.jda.api.events.ExceptionEvent
 import net.dv8tion.jda.api.events.ReadyEvent
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.hooks.EventListener
-import java.util.*
 import kotlin.properties.Delegates
 
 @UnstableDefault
@@ -183,19 +182,3 @@ class App {
         val event: MessageReceivedEvent
     )
 }
-
-
-data class Radio(
-    val tracks: List<RadioTrack>,
-    val currentIndex: Int
-)
-
-fun Radio.currentTrack() = tracks[currentIndex % tracks.size]
-
-data class RadioTrack(
-    val id: String = uuid(),
-    val title: String,
-    val source: String
-)
-
-private fun uuid() = UUID.randomUUID().toString()
