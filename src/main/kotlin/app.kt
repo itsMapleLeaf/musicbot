@@ -22,6 +22,7 @@ import net.dv8tion.jda.api.events.ExceptionEvent
 import net.dv8tion.jda.api.events.ReadyEvent
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.hooks.EventListener
+import kotlin.math.ceil
 import kotlin.properties.Delegates.observable
 
 @UnstableDefault
@@ -177,9 +178,54 @@ class App {
                 audioPlayer.isPaused = true
             }
 
-            "skip" -> reply(createMessage("stop trying it doesn't work yet goddAMMIT"))
-            "seek" -> reply(createMessage("stop trying it doesn't work yet goddAMMIT"))
-            "queue" -> reply(createMessage("stop trying it doesn't work yet goddAMMIT"))
+            "queue", "playlist", "np", "nowplaying" -> {
+                val radio = this.radio
+                    ?: return reply(createMessage("no radio running!"))
+
+                val currentTrack = radio.currentTrack()
+
+                val pageArg = command.args.firstOrNull() ?: "1"
+
+                val page = pageArg.toIntOrNull()
+                    ?: return reply(createMessage("invalid argument for page, expected number"))
+
+                val pageLength = 10
+                val startIndex = (page - 1) * pageLength
+
+                val embed = EmbedBuilder().run {
+                    setAuthor("Now Playing")
+                    setTitle(currentTrack.title, currentTrack.source)
+
+                    for ((index, track) in radio.tracks.withIndex().toList().subList(startIndex, startIndex + 10)) {
+                        val channelTitle = "channel title wip"
+                        val trackTitleContent = "${index + 1}. [${track.title}](${track.source})"
+                        val trackTitle = if (track == currentTrack) "▶ **$trackTitleContent**" else trackTitleContent
+
+                        addField(channelTitle, trackTitle, false)
+                    }
+
+                    val totalPages = ceil(radio.tracks.size.toDouble() / pageLength).toInt()
+                    setFooter("Page $page/$totalPages - run `mb queue <page>` for other pages")
+                    build()
+                }
+
+                reply(createMessage(embed = embed))
+            }
+
+            "skip", "next" ->
+                seekNextTrack()
+
+            "prev" ->
+                seekPrevTrack()
+
+            "skipto" -> {
+                this.radio ?: return reply(createMessage("no radio running!"))
+
+                val trackNumberArg = command.args.firstOrNull()?.toIntOrNull()
+                    ?: return reply(createMessage("need a track number to skip to! e.g. skipto 3"))
+
+                seekToTrackIndex(trackNumberArg - 1)
+            }
         }
     }
 
@@ -189,7 +235,10 @@ class App {
 
         val relatedVideoList = runBlocking { YouTube.getRelatedVideos(videoId) }
 
-        val firstTrack = RadioTrack(title = video.snippet.title, source = YouTube.getVideoUrl(videoId))
+        val firstTrack = RadioTrack(
+            title = video.snippet.title,
+            source = YouTube.getVideoUrl(videoId)
+        )
 
         val tracks = relatedVideoList.items.map { item ->
             RadioTrack(title = item.snippet.title, source = YouTube.getVideoUrl(item.id.videoId))
@@ -206,6 +255,16 @@ class App {
     private fun seekNextTrack() {
         val radio = this.radio ?: return
         this.radio = radio.copy(currentIndex = radio.currentIndex + 1)
+    }
+
+    private fun seekPrevTrack() {
+        val radio = this.radio ?: return
+        this.radio = radio.copy(currentIndex = radio.currentIndex - 1)
+    }
+
+    private fun seekToTrackIndex(index: Int) {
+        val radio = this.radio ?: return
+        this.radio = radio.copy(currentIndex = index)
     }
 
     private data class BotCommand(

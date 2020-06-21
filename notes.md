@@ -1,9 +1,11 @@
 - commands:
-    - [x] radio
+    - [x] radio <link>
     - [x] play
     - [x] pause
-    - [ ] skip
-    - [ ] queue <page>
+    - [x] skip
+    - [x] skipto <num>
+    - [ ] prev
+    - [x] queue <page>
     - [ ] help (oh god)
 - [ ] persist radio & current track
 - [x] command aliases

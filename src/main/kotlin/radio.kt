@@ -2,7 +2,7 @@ data class Radio(
     val tracks: List<RadioTrack>,
     val currentIndex: Int
 ) {
-    fun currentTrack() = tracks[currentIndex % tracks.size]
+    fun currentTrack() = tracks[Math.floorMod(currentIndex, tracks.size)]
 }
 
 data class RadioTrack(
