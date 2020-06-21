@@ -14,6 +14,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.ImplicitReflectionSerializer
 import kotlinx.serialization.UnstableDefault
+import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.JDABuilder
 import net.dv8tion.jda.api.entities.Activity
 import net.dv8tion.jda.api.entities.Message
@@ -22,7 +23,7 @@ import net.dv8tion.jda.api.events.ExceptionEvent
 import net.dv8tion.jda.api.events.ReadyEvent
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.hooks.EventListener
-import kotlin.properties.Delegates
+import kotlin.properties.Delegates.observable
 
 @UnstableDefault
 @ImplicitReflectionSerializer
@@ -31,19 +32,24 @@ class App {
     private val audioPlayer: AudioPlayer = lavaPlayerManager.createPlayer()
     private val jdaSendHandler = AudioPlayerSendHandler(audioPlayer)
 
+    private val jda = JDABuilder
+        .createDefault(Env.botToken)
+        .addEventListeners(getJdaEventListener())
+        .build()
+
     private var currentChannel: MessageChannel? = null
 
-    private var radio by Delegates.observable<Radio?>(null) { _, _, radio ->
-        if (radio != null) handleRadioUpdate(radio)
+    private var radio by observable<Radio?>(null) { _, _, radio ->
+        if (radio != null) {
+            handleRadioUpdate(radio)
+            jda.presence.setPresence(Activity.playing(radio.currentTrack().title), false)
+        } else {
+            jda.presence.setPresence(Activity.listening("mb radio <youtube link>"), false)
+        }
     }
 
     init {
         audioPlayer.addListener(getAudioPlayerListener())
-
-        JDABuilder
-            .createDefault(Env.botToken)
-            .addEventListeners(getJdaEventListener())
-            .build()
     }
 
     private fun getJdaEventListener() = EventListener { event ->
@@ -94,7 +100,12 @@ class App {
 
     private fun handleRadioUpdate(radio: Radio) {
         val track = radio.currentTrack()
-        sendMessage(createMessage("now playing: ${track.title} <${track.source}>"))
+
+        val nowPlayingEmbed = EmbedBuilder()
+            .setTitle(track.title, track.source)
+            .build()
+
+        sendMessage(createMessage("now playing:", nowPlayingEmbed))
 
         lavaPlayerManager.loadItem(track.source, object : AudioLoadResultHandler {
             private fun playTrack(track: AudioTrack) {
