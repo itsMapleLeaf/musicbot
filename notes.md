@@ -17,3 +17,4 @@
 - [x] starting a new radio should stop the current playing track
 - [ ] add via search term
     - [ ] search list?
+- [ ] show channel title, link, and duration in description/now playing
