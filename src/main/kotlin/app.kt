@@ -1,4 +1,3 @@
-
 import com.sedmelluq.discord.lavaplayer.player.AudioLoadResultHandler
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayer
 import com.sedmelluq.discord.lavaplayer.player.event.AudioEventListener
@@ -41,16 +40,24 @@ class App {
 
     private var radio by observable<Radio?>(null) { _, _, radio ->
         if (radio != null) {
-            handleRadioUpdate(radio)
-            jda.presence.setPresence(Activity.playing(radio.currentTrack().title), false)
+            playRadioTrack(radio)
+
+            val track = radio.currentTrack()
+            jda.presence.setPresence(Activity.listening(track.title), false)
+            sendMessage(createMessage("now playing:", createNowPlayingEmbed(track)))
         } else {
-            jda.presence.setPresence(Activity.listening("mb radio <youtube link>"), false)
+            jda.presence.setPresence(Activity.listening("mb radio <yt link>"), false)
         }
     }
 
     init {
         audioPlayer.addListener(getAudioPlayerListener())
     }
+
+    private fun createNowPlayingEmbed(track: RadioTrack) =
+        EmbedBuilder()
+            .setTitle(track.title, track.source)
+            .build()
 
     private fun getJdaEventListener() = EventListener { event ->
         when (event) {
@@ -98,14 +105,8 @@ class App {
         )
     }
 
-    private fun handleRadioUpdate(radio: Radio) {
+    private fun playRadioTrack(radio: Radio) {
         val track = radio.currentTrack()
-
-        val nowPlayingEmbed = EmbedBuilder()
-            .setTitle(track.title, track.source)
-            .build()
-
-        sendMessage(createMessage("now playing:", nowPlayingEmbed))
 
         lavaPlayerManager.loadItem(track.source, object : AudioLoadResultHandler {
             private fun playTrack(track: AudioTrack) {

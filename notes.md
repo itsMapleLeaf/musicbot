@@ -3,15 +3,15 @@
     - [x] play
     - [x] pause
     - [ ] skip
-    - [ ] queue
+    - [ ] queue <page>
     - [ ] help (oh god)
 - [ ] persist radio & current track
-- [ ] command aliases
-- [x] announce playing track
-    - [ ] use a rich embed which links to the video
+- [x] command aliases
+- [x] announce playing track with fancy embed
+    - [in this format](https://discohook.org/?message=eyJtZXNzYWdlIjp7ImNvbnRlbnQiOiJub3cgcGxheWluZzoiLCJlbWJlZHMiOlt7InRpdGxlIjoiQ2FtZWxsaWEgdnMgQWtpcmEgQ29tcGxleCAtIFJlYWxpdHkgRGlzdG9ydGlvbiBbNTowMl0iLCJ1cmwiOiJodHRwczovL3lvdXR1YmUuY29tIiwiYXV0aG9yIjp7Im5hbWUiOiJzb21lbXVzaWMgc2hhcmUiLCJ1cmwiOiJodHRwczovL2NoYW5uZWwudXJsIn19XX19)
 - [x] play next track after current one is finished
 - [x] add radio source to the start of radio track lists
 - [x] sanity checks for playing
-- [x] starting a new radio should stop the current playing track(?)
+- [x] starting a new radio should stop the current playing track
 - [ ] add via search term
     - [ ] search list?
