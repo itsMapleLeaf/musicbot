@@ -15,6 +15,7 @@ import kotlinx.serialization.ImplicitReflectionSerializer
 import kotlinx.serialization.UnstableDefault
 import net.dv8tion.jda.api.JDABuilder
 import net.dv8tion.jda.api.entities.Activity
+import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.MessageChannel
 import net.dv8tion.jda.api.entities.MessageEmbed
 import net.dv8tion.jda.api.events.ExceptionEvent
@@ -30,11 +31,6 @@ class App {
     private val audioPlayer: AudioPlayer = lavaPlayerManager.createPlayer()
     private val jdaSendHandler = AudioPlayerSendHandler(audioPlayer)
 
-    private val jda = JDABuilder
-        .createDefault(Env.botToken)
-        .addEventListeners(getJdaEventListener())
-        .build()
-
     private var currentChannel: MessageChannel? = null
 
     private var radio by Delegates.observable<Radio?>(null) { _, _, radio ->
@@ -43,6 +39,11 @@ class App {
 
     init {
         audioPlayer.addListener(getAudioPlayerListener())
+
+        JDABuilder
+            .createDefault(Env.botToken)
+            .addEventListeners(getJdaEventListener())
+            .build()
     }
 
     private fun getJdaEventListener() = EventListener { event ->
@@ -56,17 +57,16 @@ class App {
     private fun getAudioPlayerListener() = AudioEventListener { event ->
         when (event) {
             is TrackEndEvent -> {
-                val radio = this.radio
-                if (event.endReason == AudioTrackEndReason.FINISHED && radio != null) {
-                    this.radio = radio.copy(currentIndex = radio.currentIndex + 1)
+                if (event.endReason == AudioTrackEndReason.FINISHED) {
+                    seekNextTrack()
                 }
             }
+
             is TrackExceptionEvent ->
                 event.exception.printStackTrace()
 
             is TrackStuckEvent ->
                 println("track got stuck: ${event.track.info.title}")
-
         }
     }
 
@@ -95,22 +95,25 @@ class App {
     }
 
     private fun handleRadioUpdate(radio: Radio) {
-        lavaPlayerManager.loadItem(radio.currentTrack().source, object : AudioLoadResultHandler {
-            override fun loadFailed(exception: FriendlyException) = exception.printStackTrace()
+        val track = radio.currentTrack()
+        sendMessage(createMessage("now playing: ${track.title}"))
+
+        lavaPlayerManager.loadItem(track.source, object : AudioLoadResultHandler {
+            override fun trackLoaded(track: AudioTrack) =
+                audioPlayer.playTrack(track)
+
+            override fun playlistLoaded(playlist: AudioPlaylist) =
+                audioPlayer.playTrack(playlist.tracks.first())
 
             override fun noMatches() {
-                // couldn't load track
+                sendMessage(createMessage("couldn't find any matches for this track! trying next one..."))
+                seekNextTrack()
             }
 
-            override fun trackLoaded(track: AudioTrack) {
-                audioPlayer.playTrack(track)
-                currentChannel?.sendMessage(createMessage("now playing: ${track.info.title}"))
-            }
-
-            override fun playlistLoaded(playlist: AudioPlaylist) {
-                val track = playlist.tracks.first()
-                audioPlayer.playTrack(track)
-                currentChannel?.sendMessage(createMessage("now playing: ${track.info.title}"))
+            override fun loadFailed(exception: FriendlyException) {
+                exception.printStackTrace()
+                sendMessage(createMessage("failed to load this track! trying next one..."))
+                seekNextTrack()
             }
         })
     }
@@ -132,11 +135,24 @@ class App {
 
         when (command.name) {
             "radio" -> {
+                joinVoiceChannel()
                 val videoId = YouTube.getVideoId(command.argString)
                     ?: return reply("couldn't get youtube ID; only youtube links are supported at the moment!")
 
                 loadNewRadio(videoId)
             }
+
+            "play", "resume" -> {
+                joinVoiceChannel()
+                audioPlayer.isPaused = false
+            }
+
+            "pause", "stop" -> {
+                audioPlayer.isPaused = true
+            }
+
+            "skip" -> reply("stop trying it doesn't work yet goddAMMIT")
+            "queue" -> reply("stop trying it doesn't work yet goddAMMIT")
         }
     }
 
@@ -148,6 +164,15 @@ class App {
         }
 
         this.radio = Radio(tracks = tracks, currentIndex = 0)
+    }
+
+    private fun sendMessage(message: Message) {
+        currentChannel?.sendMessage(message)?.queue()
+    }
+
+    private fun seekNextTrack() {
+        val radio = this.radio ?: return
+        this.radio = radio.copy(currentIndex = radio.currentIndex + 1)
     }
 
     private data class BotCommand(
