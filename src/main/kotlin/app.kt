@@ -76,8 +76,6 @@ class App {
     }
 
     private fun handleMessageReceived(event: MessageReceivedEvent) {
-        currentChannel = event.textChannel
-
         val content = event.message.contentStripped.replace(Regex("\\s+"), " ").trim()
         if (!content.startsWith("mb")) return
 
@@ -96,14 +94,25 @@ class App {
 
     private fun handleRadioUpdate(radio: Radio) {
         val track = radio.currentTrack()
-        sendMessage(createMessage("now playing: ${track.title}"))
+        sendMessage(createMessage("now playing: ${track.title} <${track.source}>"))
 
         lavaPlayerManager.loadItem(track.source, object : AudioLoadResultHandler {
-            override fun trackLoaded(track: AudioTrack) =
-                audioPlayer.playTrack(track)
+            private fun playTrack(track: AudioTrack) {
+                try {
+                    audioPlayer.isPaused = false
+                    audioPlayer.playTrack(track)
+                } catch (e: Throwable) {
+                    e.printStackTrace()
+                }
+            }
 
-            override fun playlistLoaded(playlist: AudioPlaylist) =
-                audioPlayer.playTrack(playlist.tracks.first())
+            override fun trackLoaded(track: AudioTrack) {
+                playTrack(track)
+            }
+
+            override fun playlistLoaded(playlist: AudioPlaylist) {
+                playTrack(playlist.tracks.first())
+            }
 
             override fun noMatches() {
                 sendMessage(createMessage("couldn't find any matches for this track! trying next one..."))
@@ -119,6 +128,8 @@ class App {
     }
 
     private fun handleBotCommand(command: BotCommand) {
+        currentChannel = command.event.textChannel
+
         fun reply(text: String? = null, embed: MessageEmbed? = null) {
             command.event.textChannel.sendMessage(createMessage(text, embed)).queue()
         }
@@ -136,10 +147,13 @@ class App {
         when (command.name) {
             "radio" -> {
                 joinVoiceChannel()
+
                 val videoId = YouTube.getVideoId(command.argString)
                     ?: return reply("couldn't get youtube ID; only youtube links are supported at the moment!")
 
-                loadNewRadio(videoId)
+                if (!loadNewRadio(videoId)) {
+                    reply("could not load radio; is this a valid video?")
+                }
             }
 
             "play", "resume" -> {
@@ -152,18 +166,25 @@ class App {
             }
 
             "skip" -> reply("stop trying it doesn't work yet goddAMMIT")
+            "seek" -> reply("stop trying it doesn't work yet goddAMMIT")
             "queue" -> reply("stop trying it doesn't work yet goddAMMIT")
         }
     }
 
-    private fun loadNewRadio(videoId: String) {
-        val response = runBlocking { YouTube.getRelatedVideos(videoId) }
+    private fun loadNewRadio(videoId: String): Boolean {
+        val video = runBlocking { YouTube.getVideo(videoId) }
+            ?: return false
 
-        val tracks = response.items.map { item ->
+        val relatedVideoList = runBlocking { YouTube.getRelatedVideos(videoId) }
+
+        val firstTrack = RadioTrack(title = video.snippet.title, source = YouTube.getVideoUrl(videoId))
+
+        val tracks = relatedVideoList.items.map { item ->
             RadioTrack(title = item.snippet.title, source = YouTube.getVideoUrl(item.id.videoId))
         }
 
-        this.radio = Radio(tracks = tracks, currentIndex = 0)
+        this.radio = Radio(tracks = listOf(firstTrack) + tracks, currentIndex = 0)
+        return true
     }
 
     private fun sendMessage(message: Message) {
