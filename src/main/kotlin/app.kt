@@ -1,3 +1,4 @@
+
 import com.sedmelluq.discord.lavaplayer.player.AudioLoadResultHandler
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayer
 import com.sedmelluq.discord.lavaplayer.player.event.AudioEventListener
@@ -17,7 +18,6 @@ import net.dv8tion.jda.api.JDABuilder
 import net.dv8tion.jda.api.entities.Activity
 import net.dv8tion.jda.api.entities.Message
 import net.dv8tion.jda.api.entities.MessageChannel
-import net.dv8tion.jda.api.entities.MessageEmbed
 import net.dv8tion.jda.api.events.ExceptionEvent
 import net.dv8tion.jda.api.events.ReadyEvent
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
@@ -130,13 +130,13 @@ class App {
     private fun handleBotCommand(command: BotCommand) {
         currentChannel = command.event.textChannel
 
-        fun reply(text: String? = null, embed: MessageEmbed? = null) {
-            command.event.textChannel.sendMessage(createMessage(text, embed)).queue()
+        fun reply(message: Message) {
+            command.event.textChannel.sendMessage(message).queue()
         }
 
         fun joinVoiceChannel() {
             val voiceChannel = command.event.member?.voiceState?.channel
-                ?: return reply("must be in a voice channel!")
+                ?: return reply(createMessage("must be in a voice channel!"))
 
             command.event.guild.audioManager.apply {
                 sendingHandler = jdaSendHandler
@@ -149,10 +149,10 @@ class App {
                 joinVoiceChannel()
 
                 val videoId = YouTube.getVideoId(command.argString)
-                    ?: return reply("couldn't get youtube ID; only youtube links are supported at the moment!")
+                    ?: return reply(createMessage("couldn't get youtube ID; only youtube links are supported at the moment!"))
 
                 if (!loadNewRadio(videoId)) {
-                    reply("could not load radio; is this a valid video?")
+                    reply(createMessage("could not load radio; is this a valid video?"))
                 }
             }
 
@@ -165,9 +165,9 @@ class App {
                 audioPlayer.isPaused = true
             }
 
-            "skip" -> reply("stop trying it doesn't work yet goddAMMIT")
-            "seek" -> reply("stop trying it doesn't work yet goddAMMIT")
-            "queue" -> reply("stop trying it doesn't work yet goddAMMIT")
+            "skip" -> reply(createMessage("stop trying it doesn't work yet goddAMMIT"))
+            "seek" -> reply(createMessage("stop trying it doesn't work yet goddAMMIT"))
+            "queue" -> reply(createMessage("stop trying it doesn't work yet goddAMMIT"))
         }
     }
 
