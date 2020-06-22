@@ -62,7 +62,10 @@ class App {
 
     private fun getJdaEventListener() = EventListener { event ->
         when (event) {
-            is ReadyEvent -> handleReady(event)
+            is ReadyEvent -> {
+                this.radio = null
+                println("Ready")
+            }
             is MessageReceivedEvent -> GlobalScope.launch { handleMessageReceived(event) }
             is ExceptionEvent -> event.cause.printStackTrace()
         }
@@ -82,11 +85,6 @@ class App {
             is TrackStuckEvent ->
                 println("track got stuck: ${event.track.info.title}")
         }
-    }
-
-    private fun handleReady(event: ReadyEvent) {
-        event.jda.presence.setPresence(Activity.playing("some music"), false)
-        println("Ready")
     }
 
     private fun handleMessageReceived(event: MessageReceivedEvent) {
