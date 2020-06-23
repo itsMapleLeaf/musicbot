@@ -244,7 +244,7 @@ class App {
             RadioTrack(title = item.snippet.title, source = YouTube.getVideoUrl(item.id.videoId))
         }
 
-        sendMessage(createMessage("radio loaded! found ${tracks.size} tracks"))
+        sendMessage(createMessage("radio loaded! use `mb queue` to view the queue"))
 
         this.radio = Radio(tracks = listOf(firstTrack) + tracks, currentIndex = 0)
         return true
