@@ -62,10 +62,7 @@ class App {
 
     private fun getJdaEventListener() = EventListener { event ->
         when (event) {
-            is ReadyEvent -> {
-                this.radio = null
-                println("Ready")
-            }
+            is ReadyEvent -> handleReady()
             is MessageReceivedEvent -> GlobalScope.launch { handleMessageReceived(event) }
             is ExceptionEvent -> event.cause.printStackTrace()
         }
@@ -85,6 +82,11 @@ class App {
             is TrackStuckEvent ->
                 println("track got stuck: ${event.track.info.title}")
         }
+    }
+
+    private fun handleReady() {
+        radio = null
+        println("Ready")
     }
 
     private fun handleMessageReceived(event: MessageReceivedEvent) {
@@ -241,6 +243,8 @@ class App {
         val tracks = relatedVideoList.items.map { item ->
             RadioTrack(title = item.snippet.title, source = YouTube.getVideoUrl(item.id.videoId))
         }
+
+        sendMessage(createMessage("radio loaded! found ${tracks.size} tracks"))
 
         this.radio = Radio(tracks = listOf(firstTrack) + tracks, currentIndex = 0)
         return true
